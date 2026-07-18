@@ -1,19 +1,18 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import os
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
 from app.core.config import settings
-from app.db.models import Base
+from app.db.models import User, AppDocument, FamilyMember
 
-# Sync engine for simplicity
-engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def init_db():
+async def init_db():
     try:
-        # Import models and run setup for pgvector extension
-        with engine.connect() as conn:
-            conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-            conn.commit()
-        Base.metadata.create_all(bind=engine)
+        # Create Motor client
+        client = AsyncIOMotorClient(settings.MONGODB_URI)
+        
+        # Initialize beanie with the Document models
+        await init_beanie(database=client.nexusos, document_models=[User, AppDocument, FamilyMember])
+        print("Successfully connected to MongoDB and initialized schemas!")
     except Exception as e:
-        print(f"Error initializing DB (Make sure Postgres is running): {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"Error initializing MongoDB: {e}")

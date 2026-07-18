@@ -1,0 +1,1 @@
+export interface LifeBrainData { id: string; value: string; }

@@ -1,15 +1,17 @@
 import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, BaseSettings, validator
+from pydantic import AnyHttpUrl, validator
+from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path='../.env')
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "NexusOS - Life Brain & Document Backend"
+    PROJECT_NAME: str = "NexusOS Backend"
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "supersecretkey_please_change_in_prod")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
-    
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
-    
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:3000"]
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
@@ -18,19 +20,10 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
     
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "nexusos")
-    SQLALCHEMY_DATABASE_URI: str = ""
-
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
-    def assemble_db_connection(cls, v: str, values: dict) -> str:
-        if isinstance(v, str) and v != "":
-            return v
-        return f"postgresql://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}@{values.get('POSTGRES_SERVER')}/{values.get('POSTGRES_DB')}"
+    # MongoDB Config
+    MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
     
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
     class Config:
         case_sensitive = True

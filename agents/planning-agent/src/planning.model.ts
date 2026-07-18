@@ -1,0 +1,1 @@
+export interface PlanningData { id: string; value: string; }

@@ -1,0 +1,1 @@
+export function formatHealthData(data: any) { return data; }

@@ -1,0 +1,1 @@
+export function formatKnowledgegraphData(data: any) { return data; }

@@ -1,0 +1,1 @@
+export function formatLegalData(data: any) { return data; }

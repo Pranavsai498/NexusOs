@@ -1,0 +1,1 @@
+export interface EmergencyData { id: string; value: string; }

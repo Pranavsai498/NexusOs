@@ -1,0 +1,1 @@
+export interface GovernmentData { id: string; value: string; }

@@ -1,0 +1,1 @@
+export interface NotificationData { id: string; value: string; }

@@ -1,0 +1,1 @@
+export interface EducationData { id: string; value: string; }

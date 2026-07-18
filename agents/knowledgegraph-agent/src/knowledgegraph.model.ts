@@ -1,0 +1,1 @@
+export interface KnowledgegraphData { id: string; value: string; }

@@ -1,0 +1,1 @@
+export interface DocumentData { id: string; value: string; }

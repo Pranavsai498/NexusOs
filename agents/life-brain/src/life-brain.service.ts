@@ -1,65 +1,55 @@
 import { Injectable } from '@nitrostack/core';
-import OpenAI from 'openai';
+
 
 @Injectable()
 export class LifeBrainService {
-  private openai: OpenAI;
+  
   private conversationMemory: Record<string, any[]> = {};
 
-  constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY || 'mock-key',
-    });
-  }
+  constructor() {}
 
   async processUserRequest(message: string, userId: string): Promise<string> {
-    // 1. Initialize memory for user if it doesn't exist
     if (!this.conversationMemory[userId]) {
       this.conversationMemory[userId] = [
-        { role: 'system', content: 'You are the Life Brain Master Agent for NexusOS. Your job is to analyze the user request and route it to the correct MCP server: Document, Government, Finance, Health, Education, Legal, or Planning. Output ONLY the name of the MCP server, or "General" if you can handle it directly.' }
+        { role: 'system', content: 'You are the Life Brain Master Agent for NexusOS. Your job is to analyze the user request and route it to the correct MCP server. Options: Document, Government, Finance, Health, Planning, Knowledge Graph. Output ONLY the name of the MCP server, or "General" if you can handle it directly.' }
       ];
     }
 
-    // 2. Add user message to memory
     this.conversationMemory[userId].push({ role: 'user', content: message });
 
     try {
-      // 3. Ask OpenAI for orchestration intent (mock handling if no real key)
-      if (process.env.OPENAI_API_KEY) {
-        const response = await this.openai.chat.completions.create({
-          model: 'gpt-4',
-          messages: this.conversationMemory[userId],
-          max_tokens: 50,
-          temperature: 0,
-        });
+      if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'mock-key') {
+        const { GoogleGenerativeAI } = require('@google/generativeai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
         
-        const intent = response.choices[0].message.content?.trim() || 'General';
+        const historyText = this.conversationMemory[userId].map(m => `${m.role}: ${m.content}`).join('\n');
+        const result = await model.generateContent(historyText);
+        const response = await result.response;
+        const intent = response.text().trim() || 'General';
         
-        // 4. Update memory with assistant response
         this.conversationMemory[userId].push({ role: 'assistant', content: intent });
         
         return this.executeMcpAction(intent, message);
       } else {
-        // Fallback mock logic for hackathon if API key is missing
-        const intent = message.toLowerCase().includes('document') || message.toLowerCase().includes('vault') ? 'Document MCP' : 'General';
+        const msg = message.toLowerCase();
+        let intent = 'General';
+        if (msg.includes('document') || msg.includes('vault') || msg.includes('tax')) intent = 'Document';
+        else if (msg.includes('health') || msg.includes('doctor') || msg.includes('medical')) intent = 'Health';
+        else if (msg.includes('finance') || msg.includes('budget') || msg.includes('money')) intent = 'Finance';
+        else if (msg.includes('government') || msg.includes('scheme') || msg.includes('law')) intent = 'Government';
+        else if (msg.includes('plan') || msg.includes('goal')) intent = 'Planning';
+        else if (msg.includes('graph') || msg.includes('network')) intent = 'Knowledge Graph';
+        
         return this.executeMcpAction(intent, message);
       }
     } catch (error) {
-      console.error("OpenAI Orchestration error:", error);
+      console.error("Gemini Orchestration error:", error);
       return "Life Brain encountered an error orchestrating your request.";
     }
   }
 
   private executeMcpAction(intent: string, message: string): string {
-    if (intent.includes('Document')) {
-      return `[Routed to Document MCP]: Searching your digital vault for documents related to: "${message}"`;
-    }
-    if (intent.includes('Government')) {
-      return `[Routed to Government MCP]: Checking government schemes and eligibility.`;
-    }
-    if (intent.includes('Finance')) {
-      return `[Routed to Finance MCP]: Analyzing your budget and financial goals.`;
-    }
-    return `[Handled by Life Brain]: I've updated your Knowledge Graph. How else can I help?`;
+    return `[Routed to ${intent} MCP]: Forwarding context -> "${message}"`;
   }
 }

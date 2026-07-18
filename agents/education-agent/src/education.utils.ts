@@ -1,0 +1,1 @@
+export function formatEducationData(data: any) { return data; }

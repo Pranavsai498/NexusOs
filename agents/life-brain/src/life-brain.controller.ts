@@ -1,4 +1,4 @@
-import { ControllerDecorator as Controller, Tool, ExecutionContext } from '@nitrostack/core';
+import { ControllerDecorator as Controller, ToolDecorator as Tool, ExecutionContext } from '@nitrostack/core';
 import { z } from 'zod';
 import { LifeBrainService } from './life-brain.service';
 

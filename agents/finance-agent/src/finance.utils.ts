@@ -1,0 +1,1 @@
+export function formatFinanceData(data: any) { return data; }

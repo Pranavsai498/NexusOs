@@ -1,0 +1,1 @@
+export function formatNotificationData(data: any) { return data; }

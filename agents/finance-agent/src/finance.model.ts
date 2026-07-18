@@ -1,0 +1,1 @@
+export interface FinanceData { id: string; value: string; }

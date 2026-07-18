@@ -1,0 +1,1 @@
+export function formatGovernmentData(data: any) { return data; }

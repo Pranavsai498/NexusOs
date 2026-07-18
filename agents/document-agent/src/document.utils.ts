@@ -1,0 +1,1 @@
+export function formatDocumentData(data: any) { return data; }

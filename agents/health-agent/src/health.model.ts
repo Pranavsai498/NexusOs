@@ -1,0 +1,1 @@
+export interface HealthData { id: string; value: string; }

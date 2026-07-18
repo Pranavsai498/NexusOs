@@ -1,0 +1,1 @@
+export function formatEmergencyData(data: any) { return data; }

@@ -1,0 +1,1 @@
+export interface LegalData { id: string; value: string; }
