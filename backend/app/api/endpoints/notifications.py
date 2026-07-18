@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Depends
-from typing import Any, List
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Any, List, Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app.db.models import FinanceRecord, AppDocument, User
 from app.api.deps import get_current_user
 
 router = APIRouter()
+
+class MedToggle(BaseModel):
+    med_name: str
+    taken: bool
 
 @router.get("/")
 async def get_notifications(current_user: User = Depends(get_current_user)) -> Any:
@@ -31,7 +36,7 @@ async def get_notifications(current_user: User = Depends(get_current_user)) -> A
                         "id": f"bill-{bill.id}",
                         "type": "bill",
                         "title": f"Upcoming Bill: {bill.title}",
-                        "message": f"An amount of ${bill.amount:.2f} is due on {due_date_str} ({days_left} days left).",
+                        "message": f"An amount of ₹{bill.amount:.2f} is due on {due_date_str} ({days_left} days left).",
                         "severity": "critical" if days_left <= 2 else "warning",
                         "timestamp": f"{days_left} days left"
                     })
@@ -40,7 +45,7 @@ async def get_notifications(current_user: User = Depends(get_current_user)) -> A
                         "id": f"bill-{bill.id}",
                         "type": "bill",
                         "title": f"Overdue Bill: {bill.title}",
-                        "message": f"An amount of ${bill.amount:.2f} was due on {due_date_str} (Overdue by {abs(days_left)} days).",
+                        "message": f"An amount of ₹{bill.amount:.2f} was due on {due_date_str} (Overdue by {abs(days_left)} days).",
                         "severity": "critical",
                         "timestamp": "Overdue"
                     })
@@ -80,3 +85,70 @@ async def get_notifications(current_user: User = Depends(get_current_user)) -> A
     notifications.sort(key=lambda x: severity_order.get(x["severity"], 3))
     
     return notifications
+
+@router.get("/reminders-insights")
+async def get_reminders_insights(current_user: User = Depends(get_current_user)) -> Any:
+    """
+    Get smart prioritized reminders, multi-stage notification schedules,
+    adaptive escalation routes, and context-aware summaries.
+    """
+    notifications = await get_notifications(current_user)
+    
+    critical = []
+    important = []
+    upcoming = []
+    
+    for n in notifications:
+        item = {
+            "id": n["id"],
+            "title": n["title"],
+            "due": n["timestamp"],
+            "message": n["message"],
+            "category": n["type"].capitalize()
+        }
+        if n["severity"] == "critical":
+            critical.append(item)
+        elif n["severity"] == "warning":
+            important.append(item)
+        else:
+            upcoming.append(item)
+
+    # Escalation levels
+    escalation = [
+        {"stage": "30 Days Before", "desc": "Normal Warning email alert"},
+        {"stage": "15 Days Before", "desc": "Dashboard banner notice"},
+        {"stage": "7 Days Before", "desc": "Floating assistant text ping"},
+        {"stage": "3 Days Before", "desc": "Intense SMS reminder dispatch"},
+        {"stage": "Tomorrow", "desc": "Critical Dashboard Alarm & notification"},
+        {"stage": "Today", "desc": "Immediate Life Brief priority alert"},
+        {"stage": "Urgent Overdue", "desc": "Continuous phone ring & alarm trigger"}
+    ]
+
+    grouping = None
+    if critical or important:
+        grouping = {
+            "title": "Today's Pending Tasks Group",
+            "items": [c["title"] for c in critical] + [i["title"] for i in important],
+            "estimated_time": f"{len(critical) * 5} Minutes"
+        }
+
+    location_alerts = []
+    predictions = []
+    community = []
+
+    return {
+        "summary": {
+            "critical_count": len(critical),
+            "important_count": len(important),
+            "upcoming_count": len(upcoming),
+            "completed_count": 0
+        },
+        "critical": critical,
+        "important": important,
+        "upcoming": upcoming,
+        "escalation": escalation,
+        "grouping": grouping,
+        "location_alerts": location_alerts,
+        "predictions": predictions,
+        "community": community
+    }

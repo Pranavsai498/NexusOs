@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Any
-from app.db.models import FamilyMember, FinanceRecord, AppDocument, User
+from app.db.models import FamilyMember, FinanceRecord, AppDocument, User, GovernmentApplication, HealthRecord, EducationRecord
 from app.api.deps import get_current_user
 from app.core.config import settings
 from datetime import datetime, timedelta
@@ -89,7 +89,6 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
         """
         try:
             p_date = datetime.strptime(purchase_date, "%Y-%m-%d")
-            # Calculate approximate expiry date
             exp_date = p_date + timedelta(days=int(30.44 * warranty_period_months))
         except Exception:
             exp_date = datetime.utcnow() + timedelta(days=30 * warranty_period_months)
@@ -115,11 +114,26 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
 
     # Retrieve context to pass to Gemini
     members = await FamilyMember.find(FamilyMember.user_id == str(current_user.id)).to_list()
-    family_context = []
-    for m in members:
-        family_context.append(f"- Name: {m.name}, Role: {m.relation}, Age: {m.age}")
+    finance_records = await FinanceRecord.find(FinanceRecord.user_id == str(current_user.id)).to_list()
+    documents = await AppDocument.find(AppDocument.user_id == str(current_user.id)).to_list()
+    govt_apps = await GovernmentApplication.find(GovernmentApplication.user_id == str(current_user.id)).to_list()
+    health_records = await HealthRecord.find(HealthRecord.user_id == str(current_user.id)).to_list()
     
-    context_str = "\n".join(family_context) if family_context else "No family members added yet."
+    family_context = []
+    family_context.append(f"Owner Name: {current_user.full_name}, Email: {current_user.email}")
+    for m in members:
+        family_context.append(f"- Family Member: {m.name}, Relation: {m.relation}, Age: {m.age}")
+    for r in finance_records:
+        family_context.append(f"- Finance Record: {r.title}, Type: {r.record_type}, Amount: {r.amount}, Category: {r.category}, Status: {r.details.get('status', 'Pending')}, Due Date: {r.details.get('due_date', 'N/A')}")
+    for d in documents:
+        expiry_str = d.expiry_date.strftime('%Y-%m-%d') if d.expiry_date else 'N/A'
+        family_context.append(f"- Vault Document: {d.filename}, Category: {d.category}, Expiry: {expiry_str}, Verification Status: {d.verification_status}, Summary: {d.summary or 'N/A'}")
+    for g in govt_apps:
+        family_context.append(f"- Government Application: {g.application_name}, Status: {g.status}, Details: {g.details}")
+    for h in health_records:
+        family_context.append(f"- Health Record: {h.title}, Type: {h.record_type}, Details: {h.details}, Expiry: {h.expiry_date.strftime('%Y-%m-%d') if h.expiry_date else 'N/A'}")
+        
+    context_str = "\n".join(family_context) if family_context else "No family context registered."
     
     # Configure Gemini with tools and set instruction
     genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -132,13 +146,17 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
     chat_session = model_with_tools.start_chat(enable_automatic_function_calling=True)
     
     system_instruction = (
-        "You are NexusOS, an AI Family Intelligence Platform. The user can perform actions "
-        "like registering family members, adding bills/loans, and tracking warranties by "
-        "asking you. You have access to tools that actually write this information to the database. "
-        "Whenever a user asks you to add, register, save, or track a family member, bill/loan, or "
-        "warranty product, ALWAYS call the corresponding tool first. Confirm tool execution and "
-        "summarize the details cleanly. "
-        f"\n\nCurrent Family Roster:\n{context_str}"
+        "You are Life Brain, the AI CEO of the family and master coordinator of NexusOS.\n"
+        "You understand every family member and coordinate all other AI agents: Government, Finance, Health, Education, Legal, Planning, and Vault.\n"
+        "You have access to tools that actually write this information to the database. Call them whenever appropriate.\n"
+        "\n"
+        "Memory Context (Everything about the family):\n"
+        f"{context_str}\n"
+        "\n"
+        "Critical Directives:\n"
+        "1. AI Memory: You must remember details. If the user asks 'Insurance status?' or similar, identify which insurance they mean and answer directly using the memory context, without asking for clarification.\n"
+        "2. Voice and Language Support: Automatically detect language. If they query in Telugu, Tamil, Hindi, Malayalam, Kannada, Marathi, Bengali, or English, translate their intent, analyze it with the family memory, and reply fluently in the same language.\n"
+        "Keep responses extremely clear, helpful, and concise."
     )
     
     try:
@@ -146,10 +164,27 @@ async def chat(request: ChatRequest, current_user: User = Depends(get_current_us
             f"{system_instruction}\n\nUser Query: {request.query}"
         )
         reply = response.text
+        if "quota exceeded" in reply.lower() or "rate limit" in reply.lower():
+            raise Exception("Gemini Rate Limit Exceeded")
     except Exception as e:
-        print(f"Error in chat endpoint: {e}")
-        reply = f"Sorry, I encountered an error while executing that request: {str(e)}"
-        
+        print(f"Error or rate limit in chat endpoint: {e}")
+        # Build dynamic fallback reply using memory context
+        reply = f"Hello! I am Life Brain. I processed your request: '{request.query}'. Currently running in local fallback mode.\n\n"
+        if not members:
+            reply += "No family members are currently registered in the database. Please add your family members to get started!"
+        else:
+            reply += "Here is your current household database status:\n"
+            reply += f"- Family Members: {', '.join([m.name for m in members])}\n"
+            pending_bills = [r for r in finance_records if r.details.get("status") != "Paid"]
+            if pending_bills:
+                reply += f"- Pending bills/EMIs: {', '.join([f'{r.title} (₹{r.amount})' for r in pending_bills])}\n"
+            else:
+                reply += "- No pending bills or EMIs found.\n"
+            
+            warranties = [d for d in documents if d.category == "Warranty"]
+            if warranties:
+                reply += f"- Active product warranties: {', '.join([w.filename for w in warranties])}\n"
+                
     return {
         "reply": reply
     }

@@ -1,0 +1,28 @@
+{
+  "name": "nexusos-monorepo",
+  "version": "1.0.0",
+  "description": "NexusOS AI Family Guardian Monorepo",
+  "private": true,
+  "workspaces": [
+    "agents/*",
+    "frontend"
+  ],
+  "scripts": {
+    "build:life-brain": "npm run build --workspace=life-brain",
+    "build:education": "npm run build --workspace=education-agent",
+    "build:all": "npm run build --workspaces --if-present",
+    "start:life-brain": "npm start --workspace=life-brain",
+    "start:education": "npm start --workspace=education-agent",
+    "build": "npm run build --workspace=life-brain",
+    "start": "npm start --workspace=life-brain"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@nitrostack/core": "^1.0.13",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  }
+}

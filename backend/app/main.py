@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, documents, family, chat, dashboard, warranty, finance, profile, notifications
+from app.api.endpoints import auth, documents, family, chat, dashboard, warranty, finance, profile, notifications, government, health, education, legal, planning, predictive, graph, community
 from app.core.config import settings
 from app.core.database import db_manager
 
@@ -35,6 +35,14 @@ app.include_router(warranty.router, prefix=f"{settings.API_V1_STR}/warranty", ta
 app.include_router(finance.router, prefix=f"{settings.API_V1_STR}/finance", tags=["finance"])
 app.include_router(profile.router, prefix=f"{settings.API_V1_STR}/profile", tags=["profile"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["notifications"])
+app.include_router(government.router, prefix=f"{settings.API_V1_STR}/government", tags=["government"])
+app.include_router(health.router, prefix=f"{settings.API_V1_STR}/health", tags=["health"])
+app.include_router(education.router, prefix=f"{settings.API_V1_STR}/education", tags=["education"])
+app.include_router(legal.router, prefix=f"{settings.API_V1_STR}/legal", tags=["legal"])
+app.include_router(planning.router, prefix=f"{settings.API_V1_STR}/planning", tags=["planning"])
+app.include_router(predictive.router, prefix=f"{settings.API_V1_STR}/predictive", tags=["predictive"])
+app.include_router(graph.router, prefix=f"{settings.API_V1_STR}/graph", tags=["graph"])
+app.include_router(community.router, prefix=f"{settings.API_V1_STR}/community", tags=["community"])
 
 @app.get("/")
 def root():
