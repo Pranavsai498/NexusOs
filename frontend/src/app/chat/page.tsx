@@ -63,6 +63,48 @@ function ChatContent() {
   const [query, setQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setSpeechSupported(false);
+      }
+    }
+  }, []);
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-IN';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(prev => (prev ? prev + ' ' + transcript : transcript));
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -238,13 +280,20 @@ function ChatContent() {
               className="w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-200 rounded-full py-5 pl-16 pr-24 text-lg focus:outline-none focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/10 transition-all placeholder:text-slate-400 text-slate-900"
             />
             <div className="absolute inset-y-0 right-3 flex items-center gap-2">
-              <button className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                <Mic className="w-5 h-5" />
-              </button>
+              {speechSupported && (
+                <button 
+                  onClick={startListening}
+                  className={`p-2 rounded-full transition-all duration-200 ${
+                    isListening ? 'bg-red-500 text-white animate-pulse' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              )}
               <button 
                 onClick={handleSend}
-                disabled={!query}
-                className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white disabled:opacity-50 disabled:bg-slate-300 transition-all hover:bg-brand-blue"
+                disabled={!query && !isListening}
+                className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white disabled:opacity-50 disabled:bg-slate-300 transition-all hover:bg-brand-blue cursor-pointer"
               >
                 <ArrowUp className="w-5 h-5" />
               </button>

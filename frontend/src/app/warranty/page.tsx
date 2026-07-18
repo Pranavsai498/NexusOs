@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CalendarClock, Search, Plus, Camera, Trash2, X, Loader2, Check, AlertTriangle, HelpCircle, FileText
 } from 'lucide-react';
+import { Sidebar } from "@/components/navigation/Sidebar";
 
 export default function WarrantyPage() {
   const router = useRouter();
@@ -242,24 +243,9 @@ export default function WarrantyPage() {
   );
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-brand-bg text-slate-700">Loading warranty database...</div>;
-
   return (
     <div className="min-h-screen bg-brand-bg flex">
-      {/* Sidebar Navigation */}
-      <aside className="w-20 md:w-64 fixed inset-y-0 left-0 bg-white border-r border-slate-200 z-40 hidden sm:flex flex-col">
-        <div className="h-20 flex items-center justify-center md:justify-start md:px-6 border-b border-slate-100">
-          <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-heading font-bold text-xl shadow-lg">N</div>
-          <span className="hidden md:block ml-3 text-xl font-heading font-bold text-slate-900">NexusOS</span>
-        </div>
-        <div className="flex-1 py-8 px-4 space-y-2">
-          {['Dashboard', 'Planning', 'Family', 'Vault', 'Settings', 'Warranty'].map((item) => (
-            <Link key={item} href={`/${item.toLowerCase()}`} className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors ${item === 'Warranty' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
-              <div className="w-5 h-5 rounded-md bg-current opacity-70"></div>
-              <span className="hidden md:block font-medium">{item}</span>
-            </Link>
-          ))}
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 sm:ml-20 md:ml-64 p-4 md:p-10 pb-32">

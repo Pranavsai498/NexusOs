@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 import AuthGuard from "@/components/AuthGuard";
+import FloatingAssistant from "@/components/FloatingAssistant";
 
 export default function RootLayout({
   children,
@@ -25,7 +26,10 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} ${poppins.variable} font-sans bg-[#F8FAFC] text-slate-900 antialiased`}>
         <div className="min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
-          <AuthGuard>{children}</AuthGuard>
+          <AuthGuard>
+            {children}
+            <FloatingAssistant />
+          </AuthGuard>
         </div>
       </body>
     </html>
